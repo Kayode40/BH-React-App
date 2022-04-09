@@ -33,7 +33,7 @@ steps:
       goals: 'spring-boot:build-image'
       publishJUnitResults: false
       jdkVersionOption: 'default'
-      mavenOptions: '-Xmx3072m -Dspring-boot.build-image.imageName=capacr120.azurecr.io/my/container'
+      mavenOptions: '-Xmx3072m -Dspring-boot.build-image.imageName=bhacr120.azurecr.io/my/container'
   
     # Push container image
   - task: Docker@2

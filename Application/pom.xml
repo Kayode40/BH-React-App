@@ -67,7 +67,7 @@
 				<version>2.4.2</version>
 				<configuration>
 				    <image>
-				     <name>capacr120.azurecr.io/${project.artifactId}</name>
+				     <name>bhacr120.azurecr.io/${project.artifactId}</name>
 				    </image>
 				    <layers>
 				     <enabled>true</enabled>
