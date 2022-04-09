@@ -1,0 +1,45 @@
+# Starter pipeline
+# Start with a minimal pipeline that you can customize to build and deploy your code.
+# Add steps that build, run tests, deploy, and more:
+# https://aka.ms/yaml
+
+trigger: none
+
+stages:
+
+###################################################
+########### Create Infrastructure Stage ###########
+###################################################
+
+- stage: CreateIAC
+  jobs:
+  - job: CreateIAC
+    displayName: Create IAC
+    pool:
+      vmImage: 'Ubuntu-18.04'
+    steps:
+
+    #Initialize Terraform backend to a remote Azure storage account
+    - task: TerraformCLI@0
+      inputs:
+        command: 'init'
+        workingDirectory: '$(System.DefaultWorkingDirectory)/Configuration/iaac/acr'
+        commandOptions: '-input=false'
+        backendType: 'azurerm'
+        backendServiceArm: 'AcrServiceConnection'
+        ensureBackend: true
+        backendAzureRmResourceGroupName: '$(backend_rg)'
+        backendAzureRmResourceGroupLocation: '$(backend_location)'
+        backendAzureRmStorageAccountName: '$(backend_storage)'
+        backendAzureRmContainerName: '$(backend_container)'
+        backendAzureRmKey: 'acr.tfstate'
+        allowTelemetryCollection: true
+
+    #Apply the terraform file configurations to create ACR and AKS
+    - task: TerraformTaskV2@2
+      inputs:
+        provider: 'azurerm'
+        command: 'apply'
+        workingDirectory: '$(System.DefaultWorkingDirectory)/Configuration/iaac/acr'
+        commandOptions: '-var location=$(location) -var resource_group_name=$(resource_group_name) -var acr_name=$(acr_name) -auto-approve'
+        environmentServiceNameAzureRM: 'AcrServiceConnection'

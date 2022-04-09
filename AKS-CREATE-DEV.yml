@@ -1,0 +1,60 @@
+# Starter pipeline
+# Start with a minimal pipeline that you can customize to build and deploy your code.
+# Add steps that build, run tests, deploy, and more:
+# https://aka.ms/yaml
+
+trigger: none
+
+stages:
+
+###################################################
+########### Create Infrastructure Stage ###########
+###################################################
+
+- stage: CreateAKS
+  jobs:
+  - job: CreateAKS
+    displayName: Create AKS
+    pool:
+      vmImage: 'Ubuntu-18.04'
+    steps:
+
+    #Initialize Terraform backend to a remote Azure storage account
+    - task: replacetokens@3
+      inputs:
+        rootDirectory: '$(System.DefaultWorkingDirectory)/Configuration/iaac/aks'
+        targetFiles: '**'
+        encoding: 'auto'
+        writeBOM: true
+        escapeType: 'none'
+        actionOnMissing: 'warn'
+        keepToken: false
+        tokenPrefix: '_#{'
+        tokenSuffix: '}#_'
+        useLegacyPattern: false
+        enableTransforms: false
+        enableTelemetry: true
+        
+    - task: TerraformCLI@0
+      inputs:
+        command: 'init'
+        workingDirectory: '$(System.DefaultWorkingDirectory)/Configuration/iaac/aks'
+        commandOptions: '-input=false'
+        backendType: 'azurerm'
+        backendServiceArm: 'AcrServiceConnection'
+        ensureBackend: true
+        backendAzureRmResourceGroupName: '$(backend_rg)'
+        backendAzureRmResourceGroupLocation: '$(backend_location)'
+        backendAzureRmStorageAccountName: '$(backend_storage)'
+        backendAzureRmContainerName: '$(backend_container)'
+        backendAzureRmKey: 'aks-dev.tfstate'
+        allowTelemetryCollection: true
+
+    #Apply the terraform file configurations to create ACR and AKS
+    - task: TerraformTaskV2@2
+      inputs:
+        provider: 'azurerm'
+        command: 'apply'
+        workingDirectory: '$(System.DefaultWorkingDirectory)/Configuration/iaac/aks'
+        commandOptions: '-var env=$(env) -var location=$(location) -var resource_group_name=$(resource_group_name) -var cluster_name=$(cluster_name) -auto-approve'
+        environmentServiceNameAzureRM: 'AcrServiceConnection'
